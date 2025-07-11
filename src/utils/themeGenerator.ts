@@ -135,6 +135,63 @@ export function generateTheme(mood: Mood = 'none'): Theme {
   return { background, foreground, accent, highlight, card };
 }
 
+// Adaptive color variable detection (3-7, default to 5)
+export function detectColorVariables(): string[] {
+  const colorVars = new Set<string>();
+  for (const sheet of Array.from(document.styleSheets)) {
+    try {
+      for (const rule of Array.from(sheet.cssRules || [])) {
+        // @ts-ignore
+        if (rule.style) {
+          // @ts-ignore
+          for (const prop of rule.style) {
+            if (typeof prop === 'string' && prop.startsWith('--color-')) {
+              colorVars.add(prop);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      // Ignore CORS errors
+    }
+  }
+  const arr = Array.from(colorVars);
+  if (arr.length < 3) return ['--color-background', '--color-foreground', '--color-accent'];
+  if (arr.length > 7) return arr.slice(0, 7);
+  return arr.length ? arr : ['--color-background', '--color-foreground', '--color-accent', '--color-highlight', '--color-card'];
+}
+
+// Generate N harmonious colors (using chroma-js)
+function generatePalette(n: number, mood: Mood = 'none'): string[] {
+  // Use a base hue and spread hues evenly
+  const baseHue = Math.floor(Math.random() * 360);
+  const hues = Array.from({ length: n }, (_, i) => (baseHue + i * (360 / n)) % 360);
+  // Mood bias
+  let sat = 0.5, light = 0.5;
+  if (mood === 'melancholy') { sat = 0.35; light = 0.35; }
+  if (mood === 'euphoric') { sat = 0.7; light = 0.6; }
+  return hues.map(h => chroma.hsl(h, sat + Math.random() * 0.2, light + Math.random() * 0.2).hex());
+}
+
+// Adaptive theme generator
+export function generateAdaptiveTheme(mood: Mood = 'none') {
+  const vars = detectColorVariables();
+  const palette = generatePalette(vars.length, mood);
+  const themeObj: Record<string, string> = {};
+  vars.forEach((varName, i) => {
+    themeObj[varName] = palette[i];
+  });
+  return themeObj;
+}
+
+// Apply adaptive theme
+export function applyAdaptiveTheme(themeObj: Record<string, string>) {
+  const root = document.documentElement;
+  Object.entries(themeObj).forEach(([varName, color]) => {
+    root.style.setProperty(varName, color);
+  });
+}
+
 // Apply theme to CSS custom properties
 export function applyThemeToSite(theme: Theme): void {
   const root = document.documentElement;
