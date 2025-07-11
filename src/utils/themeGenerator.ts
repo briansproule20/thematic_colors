@@ -89,6 +89,46 @@ export function loadTheme(): Theme | null {
   return saved ? JSON.parse(saved) : null;
 }
 
+// Save theme to user's theme collection
+export function saveToThemeCollection(theme: Theme, name?: string): void {
+  const savedThemes = getThemeCollection();
+  const themeName = name || `Theme ${savedThemes.length + 1}`;
+  const themeWithMeta = {
+    ...theme,
+    id: Date.now().toString(),
+    name: themeName,
+    createdAt: new Date().toISOString()
+  };
+  
+  savedThemes.push(themeWithMeta);
+  localStorage.setItem('theme-collection', JSON.stringify(savedThemes));
+}
+
+// Get user's saved theme collection
+export function getThemeCollection(): Array<Theme & { id: string; name: string; createdAt: string }> {
+  const saved = localStorage.getItem('theme-collection');
+  return saved ? JSON.parse(saved) : [];
+}
+
+// Remove theme from collection
+export function removeFromThemeCollection(themeId: string): void {
+  const savedThemes = getThemeCollection();
+  const filteredThemes = savedThemes.filter(theme => theme.id !== themeId);
+  localStorage.setItem('theme-collection', JSON.stringify(filteredThemes));
+}
+
+// Check if current theme is already saved
+export function isThemeSaved(theme: Theme): boolean {
+  const savedThemes = getThemeCollection();
+  return savedThemes.some(savedTheme => 
+    savedTheme.background === theme.background &&
+    savedTheme.foreground === theme.foreground &&
+    savedTheme.accent === theme.accent &&
+    savedTheme.highlight === theme.highlight &&
+    savedTheme.card === theme.card
+  );
+}
+
 // Initialize theme (load saved or generate new)
 export function initializeTheme(): Theme {
   const savedTheme = loadTheme();

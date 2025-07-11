@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { generateTheme, applyThemeToSite, saveTheme, loadTheme, type Theme } from './utils/themeGenerator';
+import { generateTheme, applyThemeToSite, saveTheme, loadTheme, saveToThemeCollection, getThemeCollection, removeFromThemeCollection, isThemeSaved, type Theme } from './utils/themeGenerator';
 
 function App() {
   const [currentTheme, setCurrentTheme] = useState<Theme>(() => {
@@ -7,6 +7,8 @@ function App() {
     return savedTheme || generateTheme();
   });
   const [previewTheme, setPreviewTheme] = useState<Theme | null>(null);
+  const [savedThemes, setSavedThemes] = useState(getThemeCollection());
+  const [showSavedThemes, setShowSavedThemes] = useState(false);
 
   // Apply theme to document body
   const applyTheme = (theme: Theme) => {
@@ -32,7 +34,25 @@ function App() {
     }
   };
 
+  const saveCurrentTheme = () => {
+    const themeToSave = previewTheme || currentTheme;
+    saveToThemeCollection(themeToSave);
+    setSavedThemes(getThemeCollection());
+  };
+
+  const loadSavedTheme = (savedTheme: Theme) => {
+    setCurrentTheme(savedTheme);
+    saveTheme(savedTheme);
+    setPreviewTheme(null);
+  };
+
+  const deleteSavedTheme = (themeId: string) => {
+    removeFromThemeCollection(themeId);
+    setSavedThemes(getThemeCollection());
+  };
+
   const activeTheme = previewTheme || currentTheme;
+  const isCurrentThemeSaved = isThemeSaved(activeTheme);
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center transition-colors duration-500" style={{ background: activeTheme.background }}>
@@ -145,7 +165,91 @@ function App() {
             Apply Theme
           </button>
         )}
+
+        <button
+          className={`px-6 py-3 rounded font-semibold shadow-lg transition-all duration-300 hover:scale-105 ${
+            isCurrentThemeSaved ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'
+          }`}
+          style={{ 
+            background: activeTheme.accent, 
+            color: activeTheme.foreground 
+          }}
+          onClick={saveCurrentTheme}
+          disabled={isCurrentThemeSaved}
+        >
+          {isCurrentThemeSaved ? '✓ Saved' : 'Save to My Themes'}
+        </button>
+
+        <button
+          className="px-4 py-3 rounded font-semibold shadow-lg transition-all duration-300 hover:scale-105"
+          style={{ 
+            background: activeTheme.card, 
+            color: activeTheme.foreground,
+            border: `2px solid ${activeTheme.accent}`
+          }}
+          onClick={() => setShowSavedThemes(!showSavedThemes)}
+        >
+          {showSavedThemes ? 'Hide' : 'Show'} Saved Themes ({savedThemes.length})
+        </button>
       </div>
+      
+      {/* Saved Themes Section */}
+      {showSavedThemes && (
+        <div className="mb-8 p-6 rounded-xl shadow-xl" style={{ background: activeTheme.card }}>
+          <h3 className="text-xl font-semibold mb-4" style={{ color: activeTheme.accent }}>
+            My Saved Themes
+          </h3>
+          {savedThemes.length === 0 ? (
+            <p style={{ color: activeTheme.foreground }}>No saved themes yet. Generate and save some themes!</p>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {savedThemes.map((savedTheme) => (
+                <div 
+                  key={savedTheme.id} 
+                  className="p-4 rounded-lg border transition-all hover:scale-105"
+                  style={{ 
+                    background: savedTheme.background,
+                    borderColor: savedTheme.accent
+                  }}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold" style={{ color: savedTheme.foreground }}>
+                      {savedTheme.name}
+                    </h4>
+                    <button
+                      className="text-xs px-2 py-1 rounded hover:bg-red-500 hover:text-white transition-colors"
+                      style={{ color: savedTheme.accent }}
+                      onClick={() => deleteSavedTheme(savedTheme.id)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                  
+                  {/* Mini color palette */}
+                  <div className="flex gap-1 mb-3">
+                    <div className="w-4 h-4 rounded" style={{ background: savedTheme.background }}></div>
+                    <div className="w-4 h-4 rounded" style={{ background: savedTheme.foreground }}></div>
+                    <div className="w-4 h-4 rounded" style={{ background: savedTheme.accent }}></div>
+                    <div className="w-4 h-4 rounded" style={{ background: savedTheme.highlight }}></div>
+                    <div className="w-4 h-4 rounded" style={{ background: savedTheme.card }}></div>
+                  </div>
+                  
+                  <button
+                    className="w-full px-3 py-2 text-sm rounded font-medium transition-all hover:scale-105"
+                    style={{ 
+                      background: savedTheme.accent, 
+                      color: savedTheme.foreground 
+                    }}
+                    onClick={() => loadSavedTheme(savedTheme)}
+                  >
+                    Load Theme
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
       
       {/* Preview indicator */}
       {previewTheme && (
