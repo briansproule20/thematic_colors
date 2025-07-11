@@ -2,6 +2,17 @@ import { useState, useEffect } from 'react';
 import { generateTheme, applyThemeToSite, saveTheme, loadTheme, saveToThemeCollection, getThemeCollection, removeFromThemeCollection, isThemeSaved, type Theme, type Mood } from '../utils/themeGenerator';
 import { downloadThemePNG } from '../utils/themeExporter';
 
+function getCurrentThemeFromCSSVars(): Theme {
+  const root = document.documentElement;
+  return {
+    background: getComputedStyle(root).getPropertyValue('--color-background').trim() || '#ffffff',
+    foreground: getComputedStyle(root).getPropertyValue('--color-foreground').trim() || '#000000',
+    accent: getComputedStyle(root).getPropertyValue('--color-accent').trim() || '#3b82f6',
+    highlight: getComputedStyle(root).getPropertyValue('--color-highlight').trim() || '#f59e0b',
+    card: getComputedStyle(root).getPropertyValue('--color-card').trim() || '#f8fafc',
+  };
+}
+
 interface ThemeChangerProps {
   onThemeChange: (theme: Theme) => void;
 }
@@ -11,7 +22,6 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
     const savedTheme = loadTheme();
     return savedTheme || generateTheme();
   });
-  const [previewTheme, setPreviewTheme] = useState<Theme | null>(null);
   const [savedThemes, setSavedThemes] = useState(getThemeCollection());
   const [showSavedThemes, setShowSavedThemes] = useState(false);
   const [currentMood, setCurrentMood] = useState<Mood>('none');
@@ -30,27 +40,19 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
   }, [currentTheme, onThemeChange]);
 
   const generateNewPalette = () => {
-    setPreviewTheme(generateTheme(currentMood));
-  };
-
-  const applyPreview = () => {
-    if (previewTheme) {
-      setCurrentTheme(previewTheme);
-      saveTheme(previewTheme);
-      setPreviewTheme(null);
-    }
+    const newTheme = generateTheme(currentMood);
+    setCurrentTheme(newTheme);
+    applyThemeToSite(newTheme);
   };
 
   const saveCurrentTheme = () => {
-    const themeToSave = previewTheme || currentTheme;
-    saveToThemeCollection(themeToSave);
+    saveToThemeCollection(getCurrentThemeFromCSSVars());
     setSavedThemes(getThemeCollection());
   };
 
   const loadSavedTheme = (savedTheme: Theme) => {
     setCurrentTheme(savedTheme);
     saveTheme(savedTheme);
-    setPreviewTheme(null);
   };
 
   const deleteSavedTheme = (themeId: string) => {
@@ -66,14 +68,14 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
     setCurrentMood(mood);
   };
 
-  const activeTheme = previewTheme || currentTheme;
-  const isCurrentThemeSaved = isThemeSaved(activeTheme);
+  const appliedTheme = getCurrentThemeFromCSSVars();
+  const isCurrentThemeSaved = isThemeSaved(appliedTheme);
 
   return (
     <div className="flex flex-col items-center justify-center">
       {/* Mood Selection */}
       <div className="mb-6">
-        <h3 className="text-lg font-semibold mb-3" style={{ color: activeTheme.foreground }}>
+        <h3 className="text-lg font-semibold mb-3" style={{ color: 'var(--color-foreground)' }}>
           Choose Your Mood:
         </h3>
         <div className="flex gap-3 justify-center">
@@ -82,9 +84,9 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
               currentMood === 'melancholy' ? 'ring-2 ring-offset-2' : 'hover:scale-105'
             }`}
             style={{ 
-              background: currentMood === 'melancholy' ? activeTheme.accent : activeTheme.card,
-              color: currentMood === 'melancholy' ? activeTheme.foreground : activeTheme.foreground,
-              border: currentMood === 'melancholy' ? `2px solid ${activeTheme.accent}` : `2px solid ${activeTheme.highlight}`
+              background: currentMood === 'melancholy' ? 'var(--color-accent)' : 'var(--color-card)',
+              color: currentMood === 'melancholy' ? 'var(--color-foreground)' : 'var(--color-foreground)',
+              border: currentMood === 'melancholy' ? `2px solid var(--color-accent)` : `2px solid var(--color-highlight)`
             }}
             onClick={() => setMood('melancholy')}
           >
@@ -96,9 +98,9 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
               currentMood === 'euphoric' ? 'ring-2 ring-offset-2' : 'hover:scale-105'
             }`}
             style={{ 
-              background: currentMood === 'euphoric' ? activeTheme.accent : activeTheme.card,
-              color: currentMood === 'euphoric' ? activeTheme.foreground : activeTheme.foreground,
-              border: currentMood === 'euphoric' ? `2px solid ${activeTheme.accent}` : `2px solid ${activeTheme.highlight}`
+              background: currentMood === 'euphoric' ? 'var(--color-accent)' : 'var(--color-card)',
+              color: currentMood === 'euphoric' ? 'var(--color-foreground)' : 'var(--color-foreground)',
+              border: currentMood === 'euphoric' ? `2px solid var(--color-accent)` : `2px solid var(--color-highlight)`
             }}
             onClick={() => setMood('euphoric')}
           >
@@ -110,9 +112,9 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
               currentMood === 'none' ? 'ring-2 ring-offset-2' : 'hover:scale-105'
             }`}
             style={{ 
-              background: currentMood === 'none' ? activeTheme.accent : activeTheme.card,
-              color: currentMood === 'none' ? activeTheme.foreground : activeTheme.foreground,
-              border: currentMood === 'none' ? `2px solid ${activeTheme.accent}` : `2px solid ${activeTheme.highlight}`
+              background: currentMood === 'none' ? 'var(--color-accent)' : 'var(--color-card)',
+              color: currentMood === 'none' ? 'var(--color-foreground)' : 'var(--color-foreground)',
+              border: currentMood === 'none' ? `2px solid var(--color-accent)` : `2px solid var(--color-highlight)`
             }}
             onClick={() => setMood('none')}
           >
@@ -123,31 +125,31 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
       
       {/* Color palette display */}
       <div className="flex gap-4 mb-8">
-        <div className="w-20 h-20 rounded shadow-lg border" style={{ background: activeTheme.background }}>
-          <div className="text-xs p-1 text-center text-black">BG</div>
+        <div className="w-20 h-20 rounded shadow-lg border" style={{ background: 'var(--color-background)' }}>
+          <div className="text-xs p-1 text-center" style={{ color: 'var(--color-foreground)' }}>BG</div>
         </div>
-        <div className="w-20 h-20 rounded shadow-lg" style={{ background: activeTheme.foreground }}>
-          <div className="text-xs p-1 text-center" style={{ color: activeTheme.background }}>FG</div>
+        <div className="w-20 h-20 rounded shadow-lg" style={{ background: 'var(--color-foreground)' }}>
+          <div className="text-xs p-1 text-center" style={{ color: 'var(--color-background)' }}>FG</div>
         </div>
-        <div className="w-20 h-20 rounded shadow-lg" style={{ background: activeTheme.accent }}>
-          <div className="text-xs p-1 text-center text-black">ACC</div>
+        <div className="w-20 h-20 rounded shadow-lg" style={{ background: 'var(--color-accent)' }}>
+          <div className="text-xs p-1 text-center" style={{ color: 'var(--color-foreground)' }}>ACC</div>
         </div>
-        <div className="w-20 h-20 rounded shadow-lg" style={{ background: activeTheme.highlight }}>
-          <div className="text-xs p-1 text-center text-black">HL</div>
+        <div className="w-20 h-20 rounded shadow-lg" style={{ background: 'var(--color-highlight)' }}>
+          <div className="text-xs p-1 text-center" style={{ color: 'var(--color-foreground)' }}>HL</div>
         </div>
-        <div className="w-20 h-20 rounded shadow-lg border" style={{ background: activeTheme.card }}>
-          <div className="text-xs p-1 text-center text-black">CARD</div>
+        <div className="w-20 h-20 rounded shadow-lg border" style={{ background: 'var(--color-card)' }}>
+          <div className="text-xs p-1 text-center" style={{ color: 'var(--color-foreground)' }}>CARD</div>
         </div>
       </div>
       
       {/* Sample card demonstrating all 5 colors */}
       <div className="mb-8 flex gap-8 items-start">
-        <div className="w-80 p-6 rounded-xl shadow-xl border" style={{ background: activeTheme.card }}>
+        <div className="w-80 p-6 rounded-xl shadow-xl border" style={{ background: 'var(--color-card) !important', color: 'var(--color-foreground) !important', borderColor: 'var(--color-highlight) !important' }}>
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-3 h-3 rounded-full" style={{ background: activeTheme.accent }}></div>
-            <h3 className="font-bold text-lg" style={{ color: activeTheme.accent }}>Sample Card</h3>
+            <div className="w-3 h-3 rounded-full" style={{ background: 'var(--color-accent) !important' }}></div>
+            <h3 className="font-bold text-lg" style={{ color: 'var(--color-accent) !important' }}>Sample Card</h3>
           </div>
-          <p className="mb-4" style={{ color: activeTheme.foreground }}>
+          <p className="mb-4" style={{ color: 'var(--color-foreground) !important' }}>
             This is a sample card demonstrating how all five colors work together in a real design. 
             The background uses the card color, text uses foreground, and accents use the highlight color.
           </p>
@@ -155,8 +157,8 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
             <button 
               className="px-4 py-2 rounded-lg text-sm font-medium transition-all hover:scale-105"
               style={{ 
-                background: activeTheme.accent, 
-                color: activeTheme.foreground 
+                background: 'var(--color-accent) !important', 
+                color: 'var(--color-foreground) !important' 
               }}
             >
               Primary Action
@@ -164,9 +166,9 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
             <button 
               className="px-4 py-2 rounded-lg text-sm font-medium border transition-all hover:scale-105"
               style={{ 
-                background: 'transparent', 
-                color: activeTheme.accent,
-                borderColor: activeTheme.accent
+                background: 'transparent !important', 
+                color: 'var(--color-accent) !important',
+                borderColor: 'var(--color-accent) !important'
               }}
             >
               Secondary
@@ -174,28 +176,28 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
           </div>
         </div>
         
-        <div className="w-80 p-6 rounded-xl shadow-xl" style={{ background: activeTheme.highlight }}>
-          <h3 className="font-bold text-lg mb-4" style={{ color: activeTheme.foreground }}>Color Usage Guide</h3>
+        <div className="w-80 p-6 rounded-xl shadow-xl" style={{ background: 'var(--color-highlight) !important', color: 'var(--color-foreground) !important' }}>
+          <h3 className="font-bold text-lg mb-4" style={{ color: 'var(--color-foreground) !important' }}>Color Usage Guide</h3>
           <div className="space-y-3 text-sm">
             <div>
-              <span className="font-semibold" style={{ color: activeTheme.accent }}>Background:</span>
-              <span className="ml-2" style={{ color: activeTheme.foreground }}>Page background</span>
+              <span className="font-semibold" style={{ color: 'var(--color-accent) !important' }}>Background:</span>
+              <span className="ml-2" style={{ color: 'var(--color-foreground) !important' }}>Page background</span>
             </div>
             <div>
-              <span className="font-semibold" style={{ color: activeTheme.accent }}>Foreground:</span>
-              <span className="ml-2" style={{ color: activeTheme.foreground }}>Primary text color</span>
+              <span className="font-semibold" style={{ color: 'var(--color-accent) !important' }}>Foreground:</span>
+              <span className="ml-2" style={{ color: 'var(--color-foreground) !important' }}>Primary text color</span>
             </div>
             <div>
-              <span className="font-semibold" style={{ color: activeTheme.accent }}>Accent:</span>
-              <span className="ml-2" style={{ color: activeTheme.foreground }}>Brand color, buttons, links</span>
+              <span className="font-semibold" style={{ color: 'var(--color-accent) !important' }}>Accent:</span>
+              <span className="ml-2" style={{ color: 'var(--color-foreground) !important' }}>Brand color, buttons, links</span>
             </div>
             <div>
-              <span className="font-semibold" style={{ color: activeTheme.accent }}>Highlight:</span>
-              <span className="ml-2" style={{ color: activeTheme.foreground }}>Secondary elements, info boxes</span>
+              <span className="font-semibold" style={{ color: 'var(--color-accent) !important' }}>Highlight:</span>
+              <span className="ml-2" style={{ color: 'var(--color-foreground) !important' }}>Secondary elements, info boxes</span>
             </div>
             <div>
-              <span className="font-semibold" style={{ color: activeTheme.accent }}>Card:</span>
-              <span className="ml-2" style={{ color: activeTheme.foreground }}>Card backgrounds, elevated surfaces</span>
+              <span className="font-semibold" style={{ color: 'var(--color-accent) !important' }}>Card:</span>
+              <span className="ml-2" style={{ color: 'var(--color-foreground) !important' }}>Card backgrounds, elevated surfaces</span>
             </div>
           </div>
         </div>
@@ -206,34 +208,21 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
         <button
           className="px-6 py-3 rounded font-semibold shadow-lg transition-all duration-300 hover:scale-105"
           style={{ 
-            background: activeTheme.highlight, 
-            color: activeTheme.foreground 
+            background: 'var(--color-highlight)', 
+            color: 'var(--color-foreground)' 
           }}
           onClick={generateNewPalette}
         >
           Generate New Palette
         </button>
         
-        {previewTheme && (
-          <button
-            className="px-6 py-3 rounded font-semibold shadow-lg transition-all duration-300 hover:scale-105"
-            style={{ 
-              background: activeTheme.accent, 
-              color: activeTheme.foreground 
-            }}
-            onClick={applyPreview}
-          >
-            Apply Theme
-          </button>
-        )}
-
         <button
           className={`px-6 py-3 rounded font-semibold shadow-lg transition-all duration-300 hover:scale-105 ${
             isCurrentThemeSaved ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'
           }`}
           style={{ 
-            background: activeTheme.accent, 
-            color: activeTheme.foreground 
+            background: 'var(--color-accent)', 
+            color: 'var(--color-foreground)' 
           }}
           onClick={saveCurrentTheme}
           disabled={isCurrentThemeSaved}
@@ -244,9 +233,9 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
         <button
           className="px-4 py-3 rounded font-semibold shadow-lg transition-all duration-300 hover:scale-105"
           style={{ 
-            background: activeTheme.card, 
-            color: activeTheme.foreground,
-            border: `2px solid ${activeTheme.accent}`
+            background: 'var(--color-card)', 
+            color: 'var(--color-foreground)',
+            border: `2px solid var(--color-accent)`
           }}
           onClick={() => setShowSavedThemes(!showSavedThemes)}
         >
@@ -256,12 +245,12 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
       
       {/* Saved Themes Section */}
       {showSavedThemes && (
-        <div className="mb-8 p-6 rounded-xl shadow-xl" style={{ background: activeTheme.card }}>
-          <h3 className="text-xl font-semibold mb-4" style={{ color: activeTheme.accent }}>
+        <div className="mb-8 p-6 rounded-xl shadow-xl" style={{ background: 'var(--color-card)' }}>
+          <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-accent)' }}>
             My Saved Themes
           </h3>
           {savedThemes.length === 0 ? (
-            <p style={{ color: activeTheme.foreground }}>No saved themes yet. Generate and save some themes!</p>
+            <p style={{ color: 'var(--color-foreground)' }}>No saved themes yet. Generate and save some themes!</p>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {savedThemes.map((savedTheme) => (
@@ -324,39 +313,33 @@ export function ThemeChanger({ onThemeChange }: ThemeChangerProps) {
       )}
       
       {/* Preview indicator */}
-      {previewTheme && (
-        <div className="mb-4 px-4 py-2 rounded-lg" style={{ background: activeTheme.card }}>
-          <span className="text-sm font-semibold" style={{ color: activeTheme.accent }}>
-            🎨 Preview Mode - Click "Apply Theme" to use this palette
-          </span>
-        </div>
-      )}
+      {/* Removed preview indicator as it's no longer relevant */}
       
       {/* Theme information */}
-      <div className="mt-8 p-6 rounded-lg shadow-lg" style={{ background: activeTheme.card }}>
-        <h2 className="text-xl font-semibold mb-4" style={{ color: activeTheme.accent }}>
-          {previewTheme ? 'Preview Theme' : 'Current Theme'}
+      <div className="mt-8 p-6 rounded-lg shadow-lg" style={{ background: 'var(--color-card)' }}>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--color-accent)' }}>
+          Current Theme
         </h2>
         <div className="grid grid-cols-1 gap-2 text-sm">
           <div className="flex justify-between">
             <span className="font-mono text-black">Background:</span>
-            <span className="font-mono text-black">{activeTheme.background}</span>
+            <span className="font-mono text-black">{appliedTheme.background}</span>
           </div>
           <div className="flex justify-between">
             <span className="font-mono text-black">Foreground:</span>
-            <span className="font-mono text-black">{activeTheme.foreground}</span>
+            <span className="font-mono text-black">{appliedTheme.foreground}</span>
           </div>
           <div className="flex justify-between">
             <span className="font-mono text-black">Accent:</span>
-            <span className="font-mono text-black">{activeTheme.accent}</span>
+            <span className="font-mono text-black">{appliedTheme.accent}</span>
           </div>
           <div className="flex justify-between">
             <span className="font-mono text-black">Highlight:</span>
-            <span className="font-mono text-black">{activeTheme.highlight}</span>
+            <span className="font-mono text-black">{appliedTheme.highlight}</span>
           </div>
           <div className="flex justify-between">
             <span className="font-mono text-black">Card:</span>
-            <span className="font-mono text-black">{activeTheme.card}</span>
+            <span className="font-mono text-black">{appliedTheme.card}</span>
           </div>
         </div>
       </div>

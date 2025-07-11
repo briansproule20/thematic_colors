@@ -22,23 +22,20 @@ function App() {
   return (
     <div 
       className="min-h-screen transition-all duration-300"
-      style={{ 
-        background: currentTheme.background,
-        color: currentTheme.foreground
-      }}
+      style={{ backgroundColor: 'var(--color-background)' }}
     >
       {/* Main Theme Changer Interface */}
       <div className="container mx-auto px-4 py-8">
         <header className="text-center mb-8">
           <h1 
             className="text-4xl font-bold mb-4"
-            style={{ color: currentTheme.accent }}
+            style={{ color: 'var(--color-accent)' }}
           >
             Thematic Colors
           </h1>
           <p 
             className="text-lg"
-            style={{ color: currentTheme.foreground }}
+            style={{ color: 'var(--color-foreground)' }}
           >
             Generate beautiful, accessible color themes using color theory
           </p>
