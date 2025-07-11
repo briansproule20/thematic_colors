@@ -131,43 +131,72 @@ export function importThemes(file: File): Promise<Array<Theme & { id: string; na
 // Generate PNG preview of theme
 export function generateThemePNG(theme: Theme): string {
   const canvas = document.createElement('canvas');
-  canvas.width = 500;
-  canvas.height = 200;
+  canvas.width = 800;
+  canvas.height = 400;
   const ctx = canvas.getContext('2d')!;
   
   // Background
   ctx.fillStyle = theme.background;
-  ctx.fillRect(0, 0, 500, 200);
+  ctx.fillRect(0, 0, 800, 400);
   
-  // Color swatches
-  const colors = [theme.background, theme.foreground, theme.accent, theme.highlight, theme.card];
-  const labels = ['BG', 'FG', 'ACC', 'HL', 'CARD'];
+  // Color swatches with color information
+  const colors = [
+    { color: theme.background, label: 'Background', name: 'background' },
+    { color: theme.foreground, label: 'Foreground', name: 'foreground' },
+    { color: theme.accent, label: 'Accent', name: 'accent' },
+    { color: theme.highlight, label: 'Highlight', name: 'highlight' },
+    { color: theme.card, label: 'Card', name: 'card' }
+  ];
   
-  colors.forEach((color, index) => {
-    const x = 50 + (index * 80);
-    const y = 50;
+  colors.forEach((colorInfo, index) => {
+    const x = 50 + (index * 140);
+    const y = 80;
     
     // Color swatch
-    ctx.fillStyle = color;
-    ctx.fillRect(x, y, 60, 60);
+    ctx.fillStyle = colorInfo.color;
+    ctx.fillRect(x, y, 100, 100);
     
     // Border
     ctx.strokeStyle = theme.foreground;
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x, y, 60, 60);
+    ctx.lineWidth = 3;
+    ctx.strokeRect(x, y, 100, 100);
     
     // Label
     ctx.fillStyle = theme.foreground;
-    ctx.font = '12px Arial';
+    ctx.font = 'bold 14px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText(labels[index], x + 30, y + 80);
+    ctx.fillText(colorInfo.label, x + 50, y + 125);
+    
+    // Color codes
+    const color = chroma(colorInfo.color);
+    const [r, g, b] = color.rgb();
+    const [c, m, y_val, k] = color.cmyk();
+    
+    ctx.font = '10px Arial';
+    ctx.textAlign = 'left';
+    
+    // Hex code
+    ctx.fillStyle = theme.accent;
+    ctx.fillText(`HEX: ${colorInfo.color}`, x, y + 145);
+    
+    // RGB code
+    ctx.fillStyle = theme.foreground;
+    ctx.fillText(`RGB: ${r}, ${g}, ${b}`, x, y + 160);
+    
+    // CMYK code
+    ctx.fillText(`CMYK: ${c.toFixed(2)}, ${m.toFixed(2)}, ${y_val.toFixed(2)}, ${k.toFixed(2)}`, x, y + 175);
   });
   
   // Title
   ctx.fillStyle = theme.accent;
-  ctx.font = 'bold 16px Arial';
+  ctx.font = 'bold 24px Arial';
   ctx.textAlign = 'center';
-  ctx.fillText('Thematic Colors Theme', 250, 30);
+  ctx.fillText('Thematic Colors Theme', 400, 40);
+  
+  // Subtitle with date
+  ctx.fillStyle = theme.foreground;
+  ctx.font = '14px Arial';
+  ctx.fillText(`Generated on ${new Date().toLocaleDateString()}`, 400, 60);
   
   return canvas.toDataURL('image/png');
 }
