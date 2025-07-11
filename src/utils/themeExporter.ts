@@ -41,24 +41,24 @@ function convertColorFormats(hexColor: string): ColorFormats {
   };
 }
 
-// Generate PNG data URL for a color
-function generateColorPNG(hexColor: string): string {
-  const canvas = document.createElement('canvas');
-  canvas.width = 100;
-  canvas.height = 100;
-  const ctx = canvas.getContext('2d')!;
-  
-  // Fill with color
-  ctx.fillStyle = hexColor;
-  ctx.fillRect(0, 0, 100, 100);
-  
-  // Add border
-  ctx.strokeStyle = '#333';
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, 98, 98);
-  
-  return canvas.toDataURL('image/png');
-}
+// Generate PNG data URL for a color (unused - keeping for potential future use)
+// function generateColorPNG(hexColor: string): string {
+//   const canvas = document.createElement('canvas');
+//   canvas.width = 100;
+//   canvas.height = 100;
+//   const ctx = canvas.getContext('2d')!;
+//   
+//   // Fill with color
+//   ctx.fillStyle = hexColor;
+//   ctx.fillRect(0, 0, 100, 100);
+//   
+//   // Add border
+//   ctx.strokeStyle = '#333';
+//   ctx.lineWidth = 2;
+//   ctx.strokeRect(1, 1, 98, 98);
+//   
+//   return canvas.toDataURL('image/png');
+// }
 
 // Export themes with all color formats
 export function exportThemes(themes: Array<Theme & { id: string; name: string; createdAt: string }>): ExportedTheme[] {
