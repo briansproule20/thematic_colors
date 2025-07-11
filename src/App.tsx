@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { generateTheme, applyThemeToSite, saveTheme, loadTheme, saveToThemeCollection, getThemeCollection, removeFromThemeCollection, isThemeSaved, type Theme } from './utils/themeGenerator';
+import { downloadThemes, importThemes, downloadThemePNG } from './utils/themeExporter';
 
 function App() {
   const [currentTheme, setCurrentTheme] = useState<Theme>(() => {
@@ -9,6 +10,8 @@ function App() {
   const [previewTheme, setPreviewTheme] = useState<Theme | null>(null);
   const [savedThemes, setSavedThemes] = useState(getThemeCollection());
   const [showSavedThemes, setShowSavedThemes] = useState(false);
+  const [importError, setImportError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Apply theme to document body
   const applyTheme = (theme: Theme) => {
@@ -49,6 +52,39 @@ function App() {
   const deleteSavedTheme = (themeId: string) => {
     removeFromThemeCollection(themeId);
     setSavedThemes(getThemeCollection());
+  };
+
+  const exportAllThemes = () => {
+    downloadThemes(savedThemes);
+  };
+
+  const importThemesFromFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setImportError(null);
+      const importedThemes = await importThemes(file);
+      
+      // Add imported themes to collection
+      importedThemes.forEach(theme => {
+        saveToThemeCollection(theme, theme.name);
+      });
+      
+      setSavedThemes(getThemeCollection());
+      alert(`Successfully imported ${importedThemes.length} themes!`);
+    } catch (error) {
+      setImportError('Failed to import themes. Please check the file format.');
+    }
+    
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const downloadThemeAsPNG = (theme: Theme, name: string) => {
+    downloadThemePNG(theme, name);
   };
 
   const activeTheme = previewTheme || currentTheme;
@@ -192,6 +228,48 @@ function App() {
           {showSavedThemes ? 'Hide' : 'Show'} Saved Themes ({savedThemes.length})
         </button>
       </div>
+
+      {/* Import/Export buttons */}
+      <div className="flex gap-4 mb-8">
+        <button
+          className="px-4 py-3 rounded font-semibold shadow-lg transition-all duration-300 hover:scale-105"
+          style={{ 
+            background: activeTheme.highlight, 
+            color: activeTheme.foreground 
+          }}
+          onClick={exportAllThemes}
+          disabled={savedThemes.length === 0}
+        >
+          📤 Export All Themes ({savedThemes.length})
+        </button>
+
+        <button
+          className="px-4 py-3 rounded font-semibold shadow-lg transition-all duration-300 hover:scale-105"
+          style={{ 
+            background: activeTheme.accent, 
+            color: activeTheme.foreground 
+          }}
+          onClick={() => fileInputRef.current?.click()}
+        >
+          📥 Import Themes
+        </button>
+
+        {/* Hidden file input for importing */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".json"
+          onChange={importThemesFromFile}
+          style={{ display: 'none' }}
+        />
+      </div>
+
+      {/* Import error message */}
+      {importError && (
+        <div className="mb-4 p-3 rounded-lg" style={{ background: '#fee2e2', border: '1px solid #fca5a5' }}>
+          <p className="text-red-800 text-sm">{importError}</p>
+        </div>
+      )}
       
       {/* Saved Themes Section */}
       {showSavedThemes && (
@@ -243,6 +321,17 @@ function App() {
                     onClick={() => loadSavedTheme(savedTheme)}
                   >
                     Load Theme
+                  </button>
+                  
+                  <button
+                    className="w-full mt-2 px-3 py-2 text-sm rounded font-medium transition-all hover:scale-105"
+                    style={{ 
+                      background: savedTheme.highlight, 
+                      color: savedTheme.foreground 
+                    }}
+                    onClick={() => downloadThemeAsPNG(savedTheme, savedTheme.name)}
+                  >
+                    📷 Download PNG
                   </button>
                 </div>
               ))}
