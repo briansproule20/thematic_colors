@@ -9,30 +9,53 @@ export interface Theme {
   card: string;
 }
 
+// Mood types for color generation
+export type Mood = 'melancholy' | 'euphoric' | 'none';
+
 // Generate a random accessible five-color theme with high-contrast fg/bg
-export function generateTheme(): Theme {
+export function generateTheme(mood: Mood = 'none'): Theme {
   // Randomly decide if background is light or dark
   const isLightMode = Math.random() < 0.5;
   // Pick a random hue for the base color
   const baseHue = Math.floor(Math.random() * 360);
+  
+  // Add warm/cool temperature bias based on mood
+  let temperatureBias: 'warm' | 'cool';
+  switch (mood) {
+    case 'melancholy':
+      temperatureBias = 'cool';
+      break;
+    case 'euphoric':
+      temperatureBias = 'warm';
+      break;
+    case 'none':
+    default:
+      temperatureBias = Math.random() < 0.5 ? 'warm' : 'cool';
+      break;
+  }
+  
+  const warmHues = [0, 10, 20, 30, 40, 50, 60, 350, 360]; // Reds, oranges, yellows (emphasized for euphoric)
+  const coolHues = [200, 210, 220, 230, 240, 250, 260, 270, 280, 290]; // Blues, indigos, violets (emphasized for melancholy)
+  
+  // Generate a background color with more variation
+  const bgSaturation = 0.08 + Math.random() * 0.20; // 0.08-0.28 range
+  const bgLightness = isLightMode 
+    ? 0.88 + Math.random() * 0.10 // 0.88-0.98 range
+    : 0.05 + Math.random() * 0.15; // 0.05-0.20 range
+  
+  const background = chroma.hsl(baseHue, bgSaturation, bgLightness).hex();
 
-  // Generate a background color in the chosen range
-  const background = chroma.hsl(
-    baseHue,
-    0.12 + Math.random() * 0.12, // low saturation for backgrounds
-    isLightMode ? 0.92 + Math.random() * 0.06 : 0.08 + Math.random() * 0.10 // very light or very dark
-  ).hex();
-
-  // Try to find a foreground color with high contrast
+  // Try to find a foreground color with high contrast and more variety
   let foreground: string = '';
   let attempts = 0;
-  while (attempts < 10) {
-    // For light bg, try dark fg; for dark bg, try light fg
+  while (attempts < 15) { // Increased attempts
+    // Allow foreground to be any hue, not just base hue
+    const fgHue = Math.floor(Math.random() * 360);
     const fgLum = isLightMode
-      ? 0.08 + Math.random() * 0.10 // dark
-      : 0.92 + Math.random() * 0.06; // light
-    const fgSat = 0.10 + Math.random() * 0.15;
-    const fg = chroma.hsl(baseHue, fgSat, fgLum).hex();
+      ? 0.05 + Math.random() * 0.15 // 0.05-0.20 range
+      : 0.85 + Math.random() * 0.12; // 0.85-0.97 range
+    const fgSat = 0.05 + Math.random() * 0.25; // 0.05-0.30 range
+    const fg = chroma.hsl(fgHue, fgSat, fgLum).hex();
     if (chroma.contrast(background, fg) >= 7) {
       foreground = fg;
       break;
@@ -44,26 +67,70 @@ export function generateTheme(): Theme {
     foreground = isLightMode ? '#181818' : '#fafafa';
   }
 
-  // Accent and highlight: can be ANY color, but must complement each other
-  const accentHue = Math.floor(Math.random() * 360);
-  const accent = chroma.hsl(accentHue, 0.65, isLightMode ? 0.45 : 0.55).hex();
+  // Accent with temperature bias and more variation
+  let accentHue: number;
+  if (temperatureBias === 'warm') {
+    accentHue = warmHues[Math.floor(Math.random() * warmHues.length)];
+  } else {
+    accentHue = coolHues[Math.floor(Math.random() * coolHues.length)];
+  }
   
-  // Highlight: choose from complementary, triadic, or analogous to accent
+  const accentSaturation = 0.55 + Math.random() * 0.35; // 0.55-0.90 range
+  const accentLightness = isLightMode 
+    ? 0.35 + Math.random() * 0.25 // 0.35-0.60 range
+    : 0.45 + Math.random() * 0.25; // 0.45-0.70 range
+  
+  const accent = chroma.hsl(accentHue, accentSaturation, accentLightness).hex();
+  
+  // Enhanced highlight options with more color theory relationships
   const accentComplement = (accentHue + 180) % 360;
   const accentTriadic1 = (accentHue + 120) % 360;
   const accentTriadic2 = (accentHue + 240) % 360;
   const accentAnalogous1 = (accentHue + 30) % 360;
   const accentAnalogous2 = (accentHue - 30 + 360) % 360;
+  const accentSplit1 = (accentHue + 150) % 360; // Split complementary
+  const accentSplit2 = (accentHue + 210) % 360; // Split complementary
+  const accentTetradic1 = (accentHue + 90) % 360; // Tetradic (square)
+  const accentTetradic2 = (accentHue + 180) % 360; // Tetradic
+  const accentTetradic3 = (accentHue + 270) % 360; // Tetradic
+  const accentMonochromatic = accentHue; // Same hue, different saturation/lightness
   
-  const highlightOptions = [accentComplement, accentTriadic1, accentTriadic2, accentAnalogous1, accentAnalogous2];
+  // Add some random variation to temperature bias
+  const highlightOptions = temperatureBias === 'warm' 
+    ? [accentComplement, accentTriadic1, accentTriadic2, accentAnalogous1, accentAnalogous2, accentSplit1, accentSplit2, accentTetradic1, accentTetradic2, accentTetradic3, accentMonochromatic, ...warmHues]
+    : [accentComplement, accentTriadic1, accentTriadic2, accentAnalogous1, accentAnalogous2, accentSplit1, accentSplit2, accentTetradic1, accentTetradic2, accentTetradic3, accentMonochromatic, ...coolHues];
+  
   const highlightHue = highlightOptions[Math.floor(Math.random() * highlightOptions.length)];
-  const highlight = chroma.hsl(highlightHue, 0.55, isLightMode ? 0.60 : 0.40).hex();
+  const highlightSaturation = 0.25 + Math.random() * 0.25; // 0.25-0.50 range (reduced from 0.45-0.80)
+  
+  // Ensure accent is darker than highlight when using monochromatic
+  let highlightLightness: number;
+  if (highlightHue === accentHue) {
+    // Monochromatic: make highlight lighter than accent
+    const accentLightnessValue = isLightMode 
+      ? 0.35 + Math.random() * 0.25 // 0.35-0.60 range
+      : 0.45 + Math.random() * 0.25; // 0.45-0.70 range
+    
+    highlightLightness = isLightMode 
+      ? accentLightnessValue + (0.10 + Math.random() * 0.15) // 0.10-0.25 lighter than accent (reduced range)
+      : accentLightnessValue + (0.08 + Math.random() * 0.12); // 0.08-0.20 lighter than accent (reduced range)
+    
+    highlightLightness = Math.min(highlightLightness, 0.85); // Cap at 0.85 (reduced from 0.95)
+  } else {
+    // Non-monochromatic: use tighter range
+    highlightLightness = isLightMode 
+      ? 0.55 + Math.random() * 0.20 // 0.55-0.75 range (reduced from 0.50-0.75)
+      : 0.35 + Math.random() * 0.20; // 0.35-0.55 range (reduced from 0.30-0.55)
+  }
+  
+  const highlight = chroma.hsl(highlightHue, highlightSaturation, highlightLightness).hex();
 
-  // Card: more differentiated from background for elevation, but harmonious
+  // Card with more variation
   const bgHSL = chroma(background).hsl();
-  let cardL = isLightMode ? bgHSL[2] - 0.13 : bgHSL[2] + 0.13;
+  let cardL = isLightMode ? bgHSL[2] - (0.10 + Math.random() * 0.15) : bgHSL[2] + (0.10 + Math.random() * 0.15);
   cardL = Math.max(0, Math.min(1, cardL)); // clamp to [0,1]
-  const card = chroma.hsl(bgHSL[0], bgHSL[1], cardL).hex();
+  const cardSaturation = bgHSL[1] * (0.8 + Math.random() * 0.4); // Vary saturation too
+  const card = chroma.hsl(bgHSL[0], cardSaturation, cardL).hex();
 
   return { background, foreground, accent, highlight, card };
 }

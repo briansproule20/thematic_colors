@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { generateTheme, applyThemeToSite, saveTheme, loadTheme, saveToThemeCollection, getThemeCollection, removeFromThemeCollection, isThemeSaved, type Theme } from './utils/themeGenerator';
+import { generateTheme, applyThemeToSite, saveTheme, loadTheme, saveToThemeCollection, getThemeCollection, removeFromThemeCollection, isThemeSaved, type Theme, type Mood } from './utils/themeGenerator';
 import { downloadThemePNG } from './utils/themeExporter';
 
 function App() {
@@ -10,6 +10,7 @@ function App() {
   const [previewTheme, setPreviewTheme] = useState<Theme | null>(null);
   const [savedThemes, setSavedThemes] = useState(getThemeCollection());
   const [showSavedThemes, setShowSavedThemes] = useState(false);
+  const [currentMood, setCurrentMood] = useState<Mood>('none');
 
   // Apply theme to document body
   const applyTheme = (theme: Theme) => {
@@ -24,7 +25,7 @@ function App() {
   }, [currentTheme]);
 
   const generateNewPalette = () => {
-    setPreviewTheme(generateTheme());
+    setPreviewTheme(generateTheme(currentMood));
   };
 
   const applyPreview = () => {
@@ -56,6 +57,10 @@ function App() {
     downloadThemePNG(theme, name);
   };
 
+  const setMood = (mood: Mood) => {
+    setCurrentMood(mood);
+  };
+
   const activeTheme = previewTheme || currentTheme;
   const isCurrentThemeSaved = isThemeSaved(activeTheme);
 
@@ -64,6 +69,56 @@ function App() {
       <h1 className="text-4xl font-bold mb-6" style={{ color: activeTheme.accent }}>
         Thematic Colors
       </h1>
+      
+      {/* Mood Selection */}
+      <div className="mb-6">
+        <h3 className="text-lg font-semibold mb-3" style={{ color: activeTheme.foreground }}>
+          Choose Your Mood:
+        </h3>
+        <div className="flex gap-3 justify-center">
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              currentMood === 'melancholy' ? 'ring-2 ring-offset-2' : 'hover:scale-105'
+            }`}
+            style={{ 
+              background: currentMood === 'melancholy' ? activeTheme.accent : activeTheme.card,
+              color: currentMood === 'melancholy' ? activeTheme.foreground : activeTheme.foreground,
+              border: currentMood === 'melancholy' ? `2px solid ${activeTheme.accent}` : `2px solid ${activeTheme.highlight}`
+            }}
+            onClick={() => setMood('melancholy')}
+          >
+            🌊 Melancholy
+          </button>
+          
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              currentMood === 'euphoric' ? 'ring-2 ring-offset-2' : 'hover:scale-105'
+            }`}
+            style={{ 
+              background: currentMood === 'euphoric' ? activeTheme.accent : activeTheme.card,
+              color: currentMood === 'euphoric' ? activeTheme.foreground : activeTheme.foreground,
+              border: currentMood === 'euphoric' ? `2px solid ${activeTheme.accent}` : `2px solid ${activeTheme.highlight}`
+            }}
+            onClick={() => setMood('euphoric')}
+          >
+            ✨ Euphoric
+          </button>
+          
+          <button
+            className={`px-4 py-2 rounded-lg font-medium transition-all duration-300 ${
+              currentMood === 'none' ? 'ring-2 ring-offset-2' : 'hover:scale-105'
+            }`}
+            style={{ 
+              background: currentMood === 'none' ? activeTheme.accent : activeTheme.card,
+              color: currentMood === 'none' ? activeTheme.foreground : activeTheme.foreground,
+              border: currentMood === 'none' ? `2px solid ${activeTheme.accent}` : `2px solid ${activeTheme.highlight}`
+            }}
+            onClick={() => setMood('none')}
+          >
+            🎲 No Mood
+          </button>
+        </div>
+      </div>
       
       {/* Color palette display */}
       <div className="flex gap-4 mb-8">
